@@ -134,11 +134,7 @@ final class MovieQuizViewController: UIViewController {
         
     }
         
-    private func showFinalResult() {
-        guard let staticticService = staticticService else {
-            return
-        }
-        
+    private func showFinalResult() {        
         let alertModel = AlertModel(
             title: "Этот раунд окончен!",
             message: makeResultMessage(),
