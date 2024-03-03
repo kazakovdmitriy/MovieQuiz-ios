@@ -7,6 +7,10 @@
 
 import UIKit
 
+protocol AlertPresenterProtocol {
+    func show(alertModel: AlertModel)
+}
+
 final class AlertPresenterImpl {
     
     private weak var viewController: UIViewController?

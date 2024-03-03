@@ -1,8 +1,9 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, AlertDelegate {
+final class MovieQuizViewController: UIViewController {
     
     // MARK: - IB Outlets
+    @IBOutlet private var activityIndicator: UIActivityIndicatorView!
     @IBOutlet private var yesButton: UIButton!
     @IBOutlet private var noButton: UIButton!
     @IBOutlet private var textLabel: UILabel!
@@ -38,8 +39,12 @@ final class MovieQuizViewController: UIViewController, AlertDelegate {
         
         alertPresenter = AlertPresenterImpl(viewController: self)
         
-        questionFactory = QuestionFactoryImpl(delegate: self)
+        questionFactory = QuestionFactoryImpl(moviesLoader: MoviesLoader(), 
+                                              delegate: self)
         questionFactory?.requestNextQuestion()
+        
+        showLoadingIndicator()
+        questionFactory?.loadMovie()
     }
     
     // MARK: - IB Actions
@@ -60,9 +65,43 @@ final class MovieQuizViewController: UIViewController, AlertDelegate {
     }
     
     // MARK: - Private Methods
+    
+    private func showLoadingIndicator() {
+        activityIndicator.isHidden = false
+        activityIndicator.startAnimating()
+    }
+    
+    private func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+        activityIndicator.isHidden = true
+    }
+    
+    private func showNetworkError(message: String) {
+        hideLoadingIndicator()
+        
+        let alertModel = AlertModel(
+            title: "Что-то пошло не так(",
+            message: message,
+            buttonText: "Попробовать еще раз",
+            completion: { [weak self] in
+                
+                guard let self = self else { return }
+                
+                showLoadingIndicator()
+                self.questionFactory?.loadMovie()
+                
+                self.currentQuestionIndex = 0
+                self.correctAnswer = 0
+                
+                self.questionFactory?.requestNextQuestion()
+            })
+        
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
         return QuizStepViewModel(
-            image: UIImage(named: model.image) ?? UIImage(),
+            image: UIImage(data: model.image) ?? UIImage(),
             question: model.text,
             questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
         )
@@ -74,31 +113,39 @@ final class MovieQuizViewController: UIViewController, AlertDelegate {
         counterLabel.text = step.questionNumber
     }
     
-    
-    private func show(quiz result: QuizResultsViewModel) {
+    private func makeResultMessage() -> String {
         
-    }
-    
-    private func showFinalResult() {
-        guard let staticticService = staticticService else {
-            return
-        }
+        guard let staticticService = staticticService else { return "" }
+        
+        let totalGamesCount = staticticService.gamesCount
+        let correctBestGames = staticticService.bestGame.correct
+        let totalBestGames = staticticService.bestGame.total
+        let recordDate = staticticService.bestGame.date.dateTimeString
+        let meanAccuracy = staticticService.totalAccuracy * 100
         
         let message = """
         Ваш результат: \(correctAnswer)/\(questionsAmount)
-        Количество сыгранных квизов: \(staticticService.gamesCount)
-        Рекорд: \(staticticService.bestGame.correct)/\(staticticService.bestGame.total) (\(staticticService.bestGame.date.dateTimeString))
-        Средняя точность: \(String(format: "%.2f", staticticService.totalAccuracy * 100))%
+        Количество сыгранных квизов: \(totalGamesCount)
+        Рекорд: \(correctBestGames)/\(totalBestGames) (\(recordDate))
+        Средняя точность: \(String(format: "%.2f", meanAccuracy))%
         """
         
+        return message
+        
+    }
+        
+    private func showFinalResult() {
         let alertModel = AlertModel(
             title: "Этот раунд окончен!",
-            message: message,
+            message: makeResultMessage(),
             buttonText: "Сыграть еше раз",
             completion: { [weak self] in
-                self?.currentQuestionIndex = 0
-                self?.correctAnswer = 0
-                self?.questionFactory?.requestNextQuestion()
+                
+                guard let self = self else { return }
+                
+                self.currentQuestionIndex = 0
+                self.correctAnswer = 0
+                self.questionFactory?.requestNextQuestion()
             })
         
         alertPresenter?.show(alertModel: alertModel)
@@ -130,15 +177,26 @@ final class MovieQuizViewController: UIViewController, AlertDelegate {
         imageView.layer.borderColor = UIColor.clear.cgColor
         
         if currentQuestionIndex == questionsAmount - 1 {
+            staticticService?.store(correct: correctAnswer, total: questionsAmount)
             showFinalResult()
         } else {
             currentQuestionIndex += 1
+            // TODO: Добавить индикатор загрузки
+            showLoadingIndicator()
             questionFactory?.requestNextQuestion()
         }
     }
 }
 
 extension MovieQuizViewController: QuestionFactoryDelegate {
+    func didLoadDataFromServer() {
+        questionFactory?.requestNextQuestion()
+        hideLoadingIndicator()
+    }
+    
+    func didFaileToLoadData(with error: Error) {
+        showNetworkError(message: error.localizedDescription)
+    }
     
     func didReceiveNextQuestion(_ question: QuizQuestion?) {
         
@@ -152,5 +210,7 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.show(quiz: viewModel)
         }
+        
+        hideLoadingIndicator()
     }
 }
