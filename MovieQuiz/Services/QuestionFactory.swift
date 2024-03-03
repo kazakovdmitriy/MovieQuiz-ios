@@ -9,6 +9,10 @@ import Foundation
 
 final class QuestionFactoryImpl {
     
+    private enum QuestionFactoryError: Error {
+        case faileToLoadImage
+    }
+    
     private let moviesLoader: MoviesLoading
     private weak var delegate: QuestionFactoryDelegate?
     
@@ -62,13 +66,27 @@ extension QuestionFactoryImpl: QuestionFactoryProtocol {
             do {
                 imageData = try Data(contentsOf: movie.resizedImageURL)
             } catch {
-                print("Failed to load image")
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.delegate?.didFaileToLoadData(with: error)
+                }
             }
             
             let rating = Float(movie.rating) ?? 0
+            let moreThan = Bool.random()
+            var comparisonRating = rating + (Float.random(in: 0.1..<0.5) * [-1.0, 1.0].randomElement()!)
+            comparisonRating = comparisonRating >= 10.0 ? comparisonRating - 0.2 : comparisonRating
             
-            let text = "Рейтинг этого фильма больше чем 7?"
-            let correctAnswer = rating > 7
+            var text: String
+            var correctAnswer: Bool
+            
+            if moreThan {
+                text = "Рейтинг этого фильма больше чем \(String(format: "%.1f", comparisonRating))?"
+                correctAnswer = rating > comparisonRating
+            } else {
+                text = "Рейтинг этого фильма меньше чем \(String(format: "%.1f", comparisonRating))?"
+                correctAnswer = rating < comparisonRating
+            }
             
             let question = QuizQuestion(image: imageData, 
                                         text: text,

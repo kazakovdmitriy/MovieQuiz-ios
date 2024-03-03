@@ -134,7 +134,7 @@ final class MovieQuizViewController: UIViewController {
         
     }
         
-    private func showFinalResult() {        
+    private func showFinalResult() {
         let alertModel = AlertModel(
             title: "Этот раунд окончен!",
             message: makeResultMessage(),
@@ -190,8 +190,8 @@ final class MovieQuizViewController: UIViewController {
 
 extension MovieQuizViewController: QuestionFactoryDelegate {
     func didLoadDataFromServer() {
-        hideLoadingIndicator()
         questionFactory?.requestNextQuestion()
+        hideLoadingIndicator()
     }
     
     func didFaileToLoadData(with error: Error) {
@@ -200,8 +200,6 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
     
     
     func didReceiveNextQuestion(_ question: QuizQuestion?) {
-        
-        hideLoadingIndicator()
         
         guard let question = question else {
             return
@@ -213,5 +211,7 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.show(quiz: viewModel)
         }
+        
+        hideLoadingIndicator()
     }
 }

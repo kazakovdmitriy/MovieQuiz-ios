@@ -105,7 +105,7 @@ extension StatisticServiceImpl: StatisticService {
         
         let newRecord = GameRecord(correct: count, total: amount, date: Date())
         
-        if self.bestGame.isBetterThan(newRecord) {
+        if !self.bestGame.isBetterThan(newRecord) {
             guard let data = try? encoder.encode(newRecord) else {
                 print("Невозможно сохранить результат")
                 return
