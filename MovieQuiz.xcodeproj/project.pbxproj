@@ -246,6 +246,7 @@
 				68C843E42B667CF6008204D5 /* QuizQuestion.swift in Sources */,
 				AD5EE5DE284D7887003966EF /* UIColor+Extensions.swift in Sources */,
 				6865E4752B7573B800068D25 /* QuestionFactoryProtocol.swift in Sources */,
+				68C4483B2B9223A900930596 /* AlertPresenterProtocol.swift in Sources */,
 				6865E4772B75795800068D25 /* QuestionFactoryDelegate.swift in Sources */,
 				68EAAE292B777D6000595BBA /* AlertModel.swift in Sources */,
 				AD7AFA552836189F00399704 /* Array+Extensions.swift in Sources */,

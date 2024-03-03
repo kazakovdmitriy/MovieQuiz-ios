@@ -21,6 +21,6 @@ struct GameRecord: Codable {
     }
     
     func isBetterThan(_ otherGame: GameRecord) -> Bool {
-        correct > otherGame.correct
+        accuracy > otherGame.accuracy
     }
 }

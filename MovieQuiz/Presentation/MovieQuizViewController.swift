@@ -198,7 +198,6 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         showNetworkError(message: error.localizedDescription)
     }
     
-    
     func didReceiveNextQuestion(_ question: QuizQuestion?) {
         
         guard let question = question else {
