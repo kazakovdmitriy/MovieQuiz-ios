@@ -112,22 +112,36 @@ final class MovieQuizViewController: UIViewController {
         imageView.image = step.image
         counterLabel.text = step.questionNumber
     }
+    
+    private func makeResultMessage() -> String {
+        
+        guard let staticticService = staticticService else { return "" }
+        
+        let totalGamesCount = staticticService.gamesCount
+        let correctBestGames = staticticService.bestGame.correct
+        let totalBestGames = staticticService.bestGame.total
+        let recordDate = staticticService.bestGame.date.dateTimeString
+        let meanAccuracy = staticticService.totalAccuracy * 100
+        
+        let message = """
+        Ваш результат: \(correctAnswer)/\(questionsAmount)
+        Количество сыгранных квизов: \(totalGamesCount)
+        Рекорд: \(correctBestGames)/\(totalBestGames) (\(recordDate))
+        Средняя точность: \(String(format: "%.2f", meanAccuracy))%
+        """
+        
+        return message
+        
+    }
         
     private func showFinalResult() {
         guard let staticticService = staticticService else {
             return
         }
         
-        let message = """
-        Ваш результат: \(correctAnswer)/\(questionsAmount)
-        Количество сыгранных квизов: \(staticticService.gamesCount)
-        Рекорд: \(staticticService.bestGame.correct)/\(staticticService.bestGame.total) (\(staticticService.bestGame.date.dateTimeString))
-        Средняя точность: \(String(format: "%.2f", staticticService.totalAccuracy * 100))%
-        """
-        
         let alertModel = AlertModel(
             title: "Этот раунд окончен!",
-            message: message,
+            message: makeResultMessage(),
             buttonText: "Сыграть еше раз",
             completion: { [weak self] in
                 
@@ -167,9 +181,12 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.borderColor = UIColor.clear.cgColor
         
         if currentQuestionIndex == questionsAmount - 1 {
+            staticticService?.store(correct: correctAnswer, total: questionsAmount)
             showFinalResult()
         } else {
             currentQuestionIndex += 1
+            // TODO: Добавить индикатор загрузки
+            showLoadingIndicator()
             questionFactory?.requestNextQuestion()
         }
     }
@@ -177,7 +194,7 @@ final class MovieQuizViewController: UIViewController {
 
 extension MovieQuizViewController: QuestionFactoryDelegate {
     func didLoadDataFromServer() {
-        activityIndicator.isHidden = true
+        hideLoadingIndicator()
         questionFactory?.requestNextQuestion()
     }
     
@@ -187,6 +204,8 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
     
     
     func didReceiveNextQuestion(_ question: QuizQuestion?) {
+        
+        hideLoadingIndicator()
         
         guard let question = question else {
             return
