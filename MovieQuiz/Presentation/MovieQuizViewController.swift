@@ -11,11 +11,10 @@ final class MovieQuizViewController: UIViewController {
     @IBOutlet private var counterLabel: UILabel!
     
     // MARK: - Private Properties
-    private let questionsAmount = 10
+    private let presenter = MovieQuizPresenter()
     
     private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
-    private var currentQuestionIndex = 0
     private var correctAnswer = 0
     
     private var staticticService: StatisticService?
@@ -90,21 +89,13 @@ final class MovieQuizViewController: UIViewController {
                 showLoadingIndicator()
                 self.questionFactory?.loadMovie()
                 
-                self.currentQuestionIndex = 0
+                presenter.resetQuestionIndex()
                 self.correctAnswer = 0
                 
                 self.questionFactory?.requestNextQuestion()
             })
         
         alertPresenter?.show(alertModel: alertModel)
-    }
-    
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
-        )
     }
     
     private func show(quiz step: QuizStepViewModel) {
@@ -124,7 +115,7 @@ final class MovieQuizViewController: UIViewController {
         let meanAccuracy = staticticService.totalAccuracy * 100
         
         let message = """
-        Ваш результат: \(correctAnswer)/\(questionsAmount)
+        Ваш результат: \(correctAnswer)/\(presenter.questionsAmount)
         Количество сыгранных квизов: \(totalGamesCount)
         Рекорд: \(correctBestGames)/\(totalBestGames) (\(recordDate))
         Средняя точность: \(String(format: "%.2f", meanAccuracy))%
@@ -143,7 +134,7 @@ final class MovieQuizViewController: UIViewController {
                 
                 guard let self = self else { return }
                 
-                self.currentQuestionIndex = 0
+                presenter.resetQuestionIndex()
                 self.correctAnswer = 0
                 self.questionFactory?.requestNextQuestion()
             })
@@ -176,11 +167,11 @@ final class MovieQuizViewController: UIViewController {
         
         imageView.layer.borderColor = UIColor.clear.cgColor
         
-        if currentQuestionIndex == questionsAmount - 1 {
-            staticticService?.store(correct: correctAnswer, total: questionsAmount)
+        if presenter.isLastQuestion() {
+            staticticService?.store(correct: correctAnswer, total: presenter.questionsAmount)
             showFinalResult()
         } else {
-            currentQuestionIndex += 1
+            presenter.switchToNextQuestion()
             // TODO: Добавить индикатор загрузки
             showLoadingIndicator()
             questionFactory?.requestNextQuestion()
@@ -205,7 +196,7 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         }
         
         currentQuestion = question
-        let viewModel = self.convert(model: question)
+        let viewModel = presenter.convert(model: question)
         
         DispatchQueue.main.async { [weak self] in
             self?.show(quiz: viewModel)

@@ -7,6 +7,11 @@
 
 import Foundation
 
+protocol QuestionFactoryProtocol {
+    func requestNextQuestion()
+    func loadMovie()
+}
+
 final class QuestionFactoryImpl {
     
     private enum QuestionFactoryError: Error {
