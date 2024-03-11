@@ -14,7 +14,7 @@ final class MovieQuizViewController: UIViewController {
     private let presenter = MovieQuizPresenter()
     
     private var questionFactory: QuestionFactoryProtocol?
-    private var currentQuestion: QuizQuestion?
+    var currentQuestion: QuizQuestion?
     private var correctAnswer = 0
     
     private var staticticService: StatisticService?
@@ -34,6 +34,8 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.cornerRadius = 20
         imageView.layer.borderColor = UIColor.clear.cgColor
         
+        presenter.viewController = self
+        
         staticticService = StatisticServiceImpl()
         
         alertPresenter = AlertPresenterImpl(viewController: self)
@@ -48,19 +50,13 @@ final class MovieQuizViewController: UIViewController {
     
     // MARK: - IB Actions
     @IBAction private func yesButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let userAnswer = currentQuestion.correctAnswer == true
-        showAnswerResult(isCorrect: userAnswer)
+        presenter.currentQuestion = currentQuestion
+        presenter.yesButtonClicked()
     }
     
     @IBAction private func noButtonClicked(_ sender: UIButton) {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let userAnswer = currentQuestion.correctAnswer == false
-        showAnswerResult(isCorrect: userAnswer)
+        presenter.currentQuestion = currentQuestion
+        presenter.noButtonClicked()
     }
     
     // MARK: - Private Methods
@@ -147,7 +143,7 @@ final class MovieQuizViewController: UIViewController {
         noButton.isEnabled = lock
     }
     
-    private func showAnswerResult(isCorrect: Bool) {
+    func showAnswerResult(isCorrect: Bool) {
         
         answerButtonLock(false)
         
