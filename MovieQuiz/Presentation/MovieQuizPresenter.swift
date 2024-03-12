@@ -36,8 +36,8 @@ final class MovieQuizPresenter {
         alertPresenter = AlertPresenterImpl(viewController: viewController)
         
         self.questionFactory = QuestionFactoryImpl(moviesLoader: MoviesLoader(), delegate: self)
-        questionFactory?.loadMovie()
         viewController?.showLoadingIndicator()
+        questionFactory?.loadMovie()
     }
     
     // MARK: - Public Methods
@@ -76,38 +76,6 @@ final class MovieQuizPresenter {
         return message
     }
     
-    func showFinalResult() {
-        let alertModel = AlertModel(
-            title: "Этот раунд окончен!",
-            message: makeResultMessage(),
-            buttonText: "Сыграть еше раз",
-            completion: { [weak self] in
-                
-                guard let self = self else { return }
-                
-                restartGame()
-            })
-        
-        alertPresenter?.show(alertModel: alertModel)
-    }
-    
-    func showNetworkError(message: String) {
-        viewController?.hideLoadingIndicator()
-        
-        let alertModel = AlertModel(
-            title: "Что-то пошло не так(",
-            message: message,
-            buttonText: "Попробовать еще раз",
-            completion: { [weak self] in
-                
-                guard let self = self else { return }
-                
-                restartGame()
-            })
-        
-        alertPresenter?.show(alertModel: alertModel)
-    }
-    
     // MARK: - Private Methods
     
     private func isLastQuestion() -> Bool {
@@ -116,6 +84,9 @@ final class MovieQuizPresenter {
     
     private func switchToNextQuestion() {
         currentQuestionIndex += 1
+        
+        viewController?.showLoadingIndicator()
+        questionFactory?.requestNextQuestion()
     }
     
     private func didAnswer(isCorrectAnswer: Bool) {
@@ -152,6 +123,38 @@ final class MovieQuizPresenter {
         showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
     }
     
+    private func showFinalResult() {
+        let alertModel = AlertModel(
+            title: "Этот раунд окончен!",
+            message: makeResultMessage(),
+            buttonText: "Сыграть еше раз",
+            completion: { [weak self] in
+                
+                guard let self = self else { return }
+                
+                restartGame()
+            })
+        
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
+    private func showNetworkError(message: String) {
+        viewController?.hideLoadingIndicator()
+        
+        let alertModel = AlertModel(
+            title: "Что-то пошло не так(",
+            message: message,
+            buttonText: "Попробовать еще раз",
+            completion: { [weak self] in
+                
+                guard let self = self else { return }
+                
+                restartGame()
+            })
+        
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
     private func showNextQuestionOrResult() {
         
         viewController?.hideImageBorder()
@@ -161,10 +164,8 @@ final class MovieQuizPresenter {
             showFinalResult()
         } else {
             switchToNextQuestion()
-            questionFactory?.requestNextQuestion()
         }
     }
-    
 }
 
 extension MovieQuizPresenter: QuestionFactoryDelegate {
