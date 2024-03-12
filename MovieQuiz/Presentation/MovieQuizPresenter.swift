@@ -23,6 +23,7 @@ final class MovieQuizPresenter {
     private let staticticService: StatisticService!
     private var questionFactory: QuestionFactoryProtocol?
     private weak var viewController: MovieQuizViewController?
+    private var alertPresenter: AlertPresenterProtocol?
     
     private var currentQuestionIndex: Int = 0
     
@@ -32,6 +33,7 @@ final class MovieQuizPresenter {
         self.viewController = viewController
         
         staticticService = StatisticServiceImpl()
+        alertPresenter = AlertPresenterImpl(viewController: viewController)
         
         self.questionFactory = QuestionFactoryImpl(moviesLoader: MoviesLoader(), delegate: self)
         questionFactory?.loadMovie()
@@ -40,26 +42,10 @@ final class MovieQuizPresenter {
     
     // MARK: - Public Methods
     
-    func isLastQuestion() -> Bool {
-        currentQuestionIndex == questionsAmount - 1
-    }
-    
     func restartGame() {
         currentQuestionIndex = 0
         correctAnswer = 0
         questionFactory?.requestNextQuestion()
-    }
-    
-    func switchToNextQuestion() {
-        currentQuestionIndex += 1
-    }
-    
-    func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
-        )
     }
     
     func yesButtonClicked() {
@@ -68,24 +54,6 @@ final class MovieQuizPresenter {
     
     func noButtonClicked() {
         didAnswer(isYes: false)
-    }
-    
-    func showAnswerResult(isCorrect: Bool) {
-        
-        didAnswer(isCorrectAnswer: isCorrect)
-        
-        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            showNextQuestionOrResult()
-        }
-    }
-    
-    func didAnswer(isCorrectAnswer: Bool) {
-        if isCorrectAnswer {
-            correctAnswer += 1
-        }
     }
     
     func makeResultMessage() -> String {
@@ -106,23 +74,75 @@ final class MovieQuizPresenter {
         """
         
         return message
-        
     }
     
-    func showNextQuestionOrResult() {
+    func showFinalResult() {
+        let alertModel = AlertModel(
+            title: "Этот раунд окончен!",
+            message: makeResultMessage(),
+            buttonText: "Сыграть еше раз",
+            completion: { [weak self] in
+                
+                guard let self = self else { return }
+                
+                restartGame()
+            })
         
-        viewController?.hideImageBorder()
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
+    func showNetworkError(message: String) {
+        viewController?.hideLoadingIndicator()
         
-        if isLastQuestion() {
-            staticticService?.store(correct: correctAnswers, total: questionsAmount)
-            viewController?.showFinalResult()
-        } else {
-            switchToNextQuestion()
-            questionFactory?.requestNextQuestion()
-        }
+        let alertModel = AlertModel(
+            title: "Что-то пошло не так(",
+            message: message,
+            buttonText: "Попробовать еще раз",
+            completion: { [weak self] in
+                
+                guard let self = self else { return }
+                
+                restartGame()
+            })
+        
+        alertPresenter?.show(alertModel: alertModel)
     }
     
     // MARK: - Private Methods
+    
+    private func isLastQuestion() -> Bool {
+        currentQuestionIndex == questionsAmount - 1
+    }
+    
+    private func switchToNextQuestion() {
+        currentQuestionIndex += 1
+    }
+    
+    private func didAnswer(isCorrectAnswer: Bool) {
+        if isCorrectAnswer {
+            correctAnswer += 1
+        }
+    }
+    
+    private func showAnswerResult(isCorrect: Bool) {
+        
+        didAnswer(isCorrectAnswer: isCorrect)
+        
+        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            showNextQuestionOrResult()
+        }
+    }
+    
+    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+        return QuizStepViewModel(
+            image: UIImage(data: model.image) ?? UIImage(),
+            question: model.text,
+            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
+        )
+    }
     
     private func didAnswer(isYes: Bool) {
         guard let currentQuestion = currentQuestion else { return }
@@ -130,6 +150,19 @@ final class MovieQuizPresenter {
         let givenAnswer = isYes
         
         showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+    }
+    
+    private func showNextQuestionOrResult() {
+        
+        viewController?.hideImageBorder()
+        
+        if isLastQuestion() {
+            staticticService?.store(correct: correctAnswers, total: questionsAmount)
+            showFinalResult()
+        } else {
+            switchToNextQuestion()
+            questionFactory?.requestNextQuestion()
+        }
     }
     
 }
@@ -142,7 +175,7 @@ extension MovieQuizPresenter: QuestionFactoryDelegate {
     
     func didFaileToLoadData(with error: Error) {
         let message = error.localizedDescription
-        viewController?.showNetworkError(message: message)
+        showNetworkError(message: message)
     }
     
     func didReceiveNextQuestion(_ question: QuizQuestion?) {

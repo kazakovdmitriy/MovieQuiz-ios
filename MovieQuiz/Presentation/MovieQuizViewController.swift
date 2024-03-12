@@ -17,8 +17,6 @@ final class MovieQuizViewController: UIViewController {
     
     // MARK: - Private Properties
     private var presenter: MovieQuizPresenter!
-    private var questionFactory: QuestionFactoryProtocol?
-    private var alertPresenter: AlertPresenterProtocol?
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -30,13 +28,6 @@ final class MovieQuizViewController: UIViewController {
         imageView.layer.borderColor = UIColor.clear.cgColor
         
         presenter = MovieQuizPresenter(viewController: self)
-        
-        alertPresenter = AlertPresenterImpl(viewController: self)
-        
-        questionFactory?.requestNextQuestion()
-        
-        showLoadingIndicator()
-        questionFactory?.loadMovie()
     }
     
     // MARK: - IB Actions
@@ -74,43 +65,7 @@ final class MovieQuizViewController: UIViewController {
         imageView.image = step.image
         counterLabel.text = step.questionNumber
     }
-    
-    func showFinalResult() {
-        let alertModel = AlertModel(
-            title: "Этот раунд окончен!",
-            message: presenter.makeResultMessage(),
-            buttonText: "Сыграть еше раз",
-            completion: { [weak self] in
-                
-                guard let self = self else { return }
-                
-                presenter.restartGame()
-            })
         
-        alertPresenter?.show(alertModel: alertModel)
-    }
-    
-    func showNetworkError(message: String) {
-        hideLoadingIndicator()
-        
-        let alertModel = AlertModel(
-            title: "Что-то пошло не так(",
-            message: message,
-            buttonText: "Попробовать еще раз",
-            completion: { [weak self] in
-                
-                guard let self = self else { return }
-                
-                showLoadingIndicator()
-                self.questionFactory?.loadMovie()
-                
-                presenter.restartGame()
-                
-                self.questionFactory?.requestNextQuestion()
-            })
-        
-        alertPresenter?.show(alertModel: alertModel)
-    }
     
     // MARK: - Private Methods
     
