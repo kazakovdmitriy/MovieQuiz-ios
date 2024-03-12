@@ -40,4 +40,14 @@ final class MovieQuizPresenterTests: XCTestCase {
         XCTAssertEqual(viewModel.question, "Question Text")
         XCTAssertEqual(viewModel.questionNumber, "1/10")
     }
+    
+    func testRestartGame() throws {
+        let viewControllerMock = MovieQuizViewControllerMock()
+        let sut = MovieQuizPresenter(viewController: viewControllerMock)
+        
+        sut.correctAnswer = 5
+        
+        sut.restartGame()
+        XCTAssertEqual(sut.correctAnswer, 0)
+    }
 }
