@@ -1,6 +1,6 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController {
+final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
     
     // MARK: - IB Outlets
     @IBOutlet private var activityIndicator: UIActivityIndicatorView!
@@ -61,11 +61,13 @@ final class MovieQuizViewController: UIViewController {
     }
     
     func show(quiz step: QuizStepViewModel) {
+        
+        hideImageBorder()
+        
         textLabel.text = step.question
         imageView.image = step.image
         counterLabel.text = step.questionNumber
     }
-        
     
     // MARK: - Private Methods
     

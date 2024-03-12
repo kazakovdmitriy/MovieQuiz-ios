@@ -22,18 +22,18 @@ final class MovieQuizPresenter {
     
     private let staticticService: StatisticService!
     private var questionFactory: QuestionFactoryProtocol?
-    private weak var viewController: MovieQuizViewController?
+    private weak var viewController: MovieQuizViewControllerProtocol?
     private var alertPresenter: AlertPresenterProtocol?
     
     private var currentQuestionIndex: Int = 0
     
     // MARK: - Initializers
     
-    init(viewController: MovieQuizViewController?) {
+    init(viewController: MovieQuizViewControllerProtocol?) {
         self.viewController = viewController
         
         staticticService = StatisticServiceImpl()
-        alertPresenter = AlertPresenterImpl(viewController: viewController)
+        alertPresenter = AlertPresenterImpl(viewController: viewController as? UIViewController)
         
         self.questionFactory = QuestionFactoryImpl(moviesLoader: MoviesLoader(), delegate: self)
         viewController?.showLoadingIndicator()
@@ -54,6 +54,14 @@ final class MovieQuizPresenter {
     
     func noButtonClicked() {
         didAnswer(isYes: false)
+    }
+    
+    func convert(model: QuizQuestion) -> QuizStepViewModel {
+        return QuizStepViewModel(
+            image: UIImage(data: model.image) ?? UIImage(),
+            question: model.text,
+            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
+        )
     }
     
     func makeResultMessage() -> String {
@@ -107,14 +115,6 @@ final class MovieQuizPresenter {
         }
     }
     
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: model.image) ?? UIImage(),
-            question: model.text,
-            questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
-        )
-    }
-    
     private func didAnswer(isYes: Bool) {
         guard let currentQuestion = currentQuestion else { return }
         
@@ -156,9 +156,6 @@ final class MovieQuizPresenter {
     }
     
     private func showNextQuestionOrResult() {
-        
-        viewController?.hideImageBorder()
-        
         if isLastQuestion() {
             staticticService?.store(correct: correctAnswers, total: questionsAmount)
             showFinalResult()
