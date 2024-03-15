@@ -11,12 +11,7 @@ final class MovieQuizPresenter {
     
     // MARK: - Public Properties
     
-    var correctAnswers = 0
-    var correctAnswer: Int = 0
-    
     var currentQuestion: QuizQuestion?
-    
-    let questionsAmount: Int = 10
     
     // MARK: - Private Properties
     
@@ -26,6 +21,8 @@ final class MovieQuizPresenter {
     private var alertPresenter: AlertPresenterProtocol?
     
     private var currentQuestionIndex: Int = 0
+    private let questionsAmount: Int = 10
+    private var correctAnswer: Int = 0
     
     // MARK: - Initializers
     
@@ -42,12 +39,6 @@ final class MovieQuizPresenter {
     
     // MARK: - Public Methods
     
-    func restartGame() {
-        currentQuestionIndex = 0
-        correctAnswer = 0
-        questionFactory?.requestNextQuestion()
-    }
-    
     func yesButtonClicked() {
         didAnswer(isYes: true)
     }
@@ -63,27 +54,7 @@ final class MovieQuizPresenter {
             questionNumber: "\(currentQuestionIndex+1)/\(questionsAmount)"
         )
     }
-    
-    func makeResultMessage() -> String {
         
-        guard let staticticService = staticticService else { return "" }
-        
-        let totalGamesCount = staticticService.gamesCount
-        let correctBestGames = staticticService.bestGame.correct
-        let totalBestGames = staticticService.bestGame.total
-        let recordDate = staticticService.bestGame.date.dateTimeString
-        let meanAccuracy = staticticService.totalAccuracy * 100
-        
-        let message = """
-        Ваш результат: \(correctAnswer)/\(questionsAmount)
-        Количество сыгранных квизов: \(totalGamesCount)
-        Рекорд: \(correctBestGames)/\(totalBestGames) (\(recordDate))
-        Средняя точность: \(String(format: "%.2f", meanAccuracy))%
-        """
-        
-        return message
-    }
-    
     // MARK: - Private Methods
     
     private func isLastQuestion() -> Bool {
@@ -94,6 +65,12 @@ final class MovieQuizPresenter {
         currentQuestionIndex += 1
         
         viewController?.showLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    private func restartGame() {
+        currentQuestionIndex = 0
+        correctAnswer = 0
         questionFactory?.requestNextQuestion()
     }
     
@@ -121,6 +98,26 @@ final class MovieQuizPresenter {
         let givenAnswer = isYes
         
         showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+    }
+    
+    private func makeResultMessage() -> String {
+        
+        guard let staticticService = staticticService else { return "" }
+        
+        let totalGamesCount = staticticService.gamesCount
+        let correctBestGames = staticticService.bestGame.correct
+        let totalBestGames = staticticService.bestGame.total
+        let recordDate = staticticService.bestGame.date.dateTimeString
+        let meanAccuracy = staticticService.totalAccuracy * 100
+        
+        let message = """
+        Ваш результат: \(correctAnswer)/\(questionsAmount)
+        Количество сыгранных квизов: \(totalGamesCount)
+        Рекорд: \(correctBestGames)/\(totalBestGames) (\(recordDate))
+        Средняя точность: \(String(format: "%.2f", meanAccuracy))%
+        """
+        
+        return message
     }
     
     private func showFinalResult() {
@@ -157,7 +154,7 @@ final class MovieQuizPresenter {
     
     private func showNextQuestionOrResult() {
         if isLastQuestion() {
-            staticticService?.store(correct: correctAnswers, total: questionsAmount)
+            staticticService?.store(correct: correctAnswer, total: questionsAmount)
             showFinalResult()
         } else {
             switchToNextQuestion()
